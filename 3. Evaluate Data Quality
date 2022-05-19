@@ -1,0 +1,43 @@
+#1. Not having all information available
+library(readr)
+users = read_csv(file ='/Users/manaka/Downloads/users_cleaned.csv')
+summary(is.na(users))
+
+receipts = read_csv(file ='/Users/manaka/Downloads/receipts_cleaned.csv')
+summary(is.na(receipts))
+
+
+#2. No foreign key to link brand table with the rest tables
+brands = read_csv(file ='/Users/manaka/Downloads/brands_cleaned.csv')
+str(brands)
+#barcode, name, brandCode
+identical(brands[['barcode']],receipts[['barcode']])
+identical(brands[['name']],receipts[['rewardsGroup']])
+identical(brands[['brandcode']],receipts[['barcode']])
+summary(receipts[['barcode']] %in% brands[['barcode']])
+summary(receipts[['rewardsGroup']] %in% brands[['name']])
+summary(receipts[['barcode']] %in% brands[['brandcode']])
+
+#3.Outliers
+library(stringr)
+library(dplyr)
+library(ggplot2)
+data= receipts %>% 
+          group_by(word(rewardsGroup,1)) %>% 
+          summarize(sum = sum(totalSpent)) %>%
+          top_n(10,sum)
+brands = data$`word(rewardsGroup, 1)`
+data2 = receipts[word(receipts$rewardsGroup,1) %in% brands,]
+
+ggplot(data2,aes(x=word(rewardsGroup,1), y= totalSpent)) +
+  geom_boxplot(outlier.colour = "red") + scale_y_log10()
+
+a = data2[word(data2$rewardsGroup,1) == 'BEN' & data2$totalSpent > 1000,]
+a$rewardsReceiptStatus
+b = data2[word(data2$rewardsGroup,1) == 'DORITOS' & data2$totalSpent > 11,]
+b$rewardsReceiptStatus
+b = data2[word(data2$rewardsGroup,1) == 'MILLER' & data2$totalSpent > 11,]
+b$rewardsReceiptStatus
+
+#4. FLAGGED, REJECTED
+rf = receipts[receipts$rewardsReceiptStatus == c('REJECTED','FLAGGED'),]
