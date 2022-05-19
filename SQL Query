@@ -1,0 +1,72 @@
+### What are the top 5 brands by receipts scanned for most recent month?
+SELECT SUBSTRING_INDEX(rewardsGroup,' ',1) AS Brand,
+	   SUM(totalSpent) AS TotalAmount
+FROM receipts 
+WHERE EXTRACT(MONTH FROM datescanned) = 02 AND SUBSTRING_INDEX(rewardsGroup,' ',1) != 'NA' #Since data is limited and brands 
+GROUP BY Brand									##in March 2021 (most recent month) are not entered, February is used here
+ORDER BY TotalAmount DESC
+LIMIT 5; 
+#Five top brands are HEINZ, DUNCAN, DORITOS, SWISS, SARGENTO
+
+
+### How does the ranking of the top 5 brands by receipts scanned for the recent month compare to the ranking for the previous month?
+SELECT SUBSTRING_INDEX(rewardsGroup,' ',1) AS Brand,
+	   SUM(totalSpent) AS TotalAmount
+FROM receipts 
+WHERE EXTRACT(MONTH FROM datescanned) = 01 AND SUBSTRING_INDEX(rewardsGroup,' ',1) != 'NA'   
+GROUP BY Brand									
+ORDER BY TotalAmount DESC
+LIMIT 5;
+#Five top brands are DUNCAN, BEN, HUGGIES, MILLER, KLEENEX
+# Only DUNCAN did not fall out of the top 5 ranking.alter
+
+
+### When considering average spend from receipts with 'rewardsReceiptStatus‚Äô of ‚ÄòAccepted‚Äô or ‚ÄòRejected‚Äô, which is greater?
+WITH A AS (SELECT *
+		FROM receipts
+        WHERE rewardsReceiptStatus = 'FINISHED' OR  rewardsReceiptStatus = 'REJECTED')# I assumed that FINISHED is ACCEPTED
+        
+SELECT 	rewardsReceiptStatus,
+		AVG(totalSpent) AS AVG_spent
+FROM A 
+GROUP BY rewardsReceiptStatus; 
+# 'Accpeted' is greater
+
+
+###When considering total number of items purchased from receipts with 'rewardsReceiptStatus‚Äô of ‚ÄòAccepted‚Äô or ‚ÄòRejected‚Äô, which is greater?
+WITH A AS (SELECT *
+		FROM receipts
+        WHERE rewardsReceiptStatus = 'FINISHED' OR  rewardsReceiptStatus = 'REJECTED')
+        
+SELECT 	rewardsReceiptStatus,
+		SUM(purchasedItemCount) AS Total_number
+FROM A 
+GROUP BY rewardsReceiptStatus; 	
+# 'Accepted' is greater
+
+
+###Which brand has the most spend among users who were created within the past 6 months?
+SELECT SUBSTRING_INDEX(rewardsGroup, ' ', 1) AS Brand,
+		SUM(totalSpent) AS spend
+FROM receipts r
+INNER JOIN users u
+ON r.userId = u.id
+WHERE (DATE(u.createdDate) BETWEEN '2020-09-01' AND '2021-02-28') AND SUBSTRING_INDEX(rewardsGroup,' ',1) != 'NA' 
+# The latest date of createdDate in user table is Feb 2021, so I assumed the past 6 months is from Sep 2020 to Feb 2021
+GROUP BY Brand
+ORDER BY spend DESC
+LIMIT 1; 
+# HUGGIES has the most spend among users who were created within the past 6 months
+
+
+### Which brand has the most transactions among users who were created within the past 6 months?
+SELECT SUBSTRING_INDEX(rewardsGroup, ' ', 1) AS Brand,
+		COUNT(*) AS number_trans
+FROM receipts r
+INNER JOIN users u
+ON r.userId = u.id
+WHERE DATE(u.createdDate) BETWEEN '2020-09-01' AND '2021-02-28' AND SUBSTRING_INDEX(rewardsGroup,' ',1) != 'NA' 
+GROUP BY Brand
+ORDER BY number_trans DESC
+LIMIT 1;
+# HUGGIES has the most transactions among users who were created within the past 6 months
